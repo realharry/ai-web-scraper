@@ -15,12 +15,14 @@ chrome.action.onClicked.addListener((tab) => {
 // Handle messages from content script and sidepanel
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'SCRAPE_CONTENT') {
-    handleContentScraping(message, sendResponse);
+    handleContentScraping(message)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ success: false, error: error.message }));
     return true; // Keep message channel open for async response
   }
 });
 
-async function handleContentScraping(message: any, sendResponse: Function) {
+async function handleContentScraping(message: any) {
   try {
     // Use the tab ID from the message payload instead of sender.tab.id
     const tabId = message.tabId;
@@ -34,9 +36,9 @@ async function handleContentScraping(message: any, sendResponse: Function) {
       selector: message.selector,
       extractionType: message.extractionType
     });
-    sendResponse({ success: true, data: response });
+    return { success: true, data: response };
   } catch (error) {
     console.error('Error in content scraping:', error);
-    sendResponse({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+    throw new Error(error instanceof Error ? error.message : 'Unknown error');
   }
 }

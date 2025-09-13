@@ -9,8 +9,14 @@ interface ScrapingResult {
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'EXTRACT_CONTENT') {
-    const result = extractContent(message.selector, message.extractionType);
-    sendResponse(result);
+    try {
+      const result = extractContent(message.selector, message.extractionType);
+      sendResponse(result);
+    } catch (error) {
+      console.error('Error in content script:', error);
+      sendResponse({ data: [], headers: [], totalElements: 0 });
+    }
+    return true;
   }
 });
 

@@ -26,11 +26,12 @@ const SidePanelApp: React.FC = () => {
         throw new Error('No active tab found');
       }
 
-      // Send message to background script
+      // Send message to background script with tab ID
       const response = await chrome.runtime.sendMessage({
         type: 'SCRAPE_CONTENT',
         selector,
-        extractionType
+        extractionType,
+        tabId: tab.id
       });
 
       if (response.success) {

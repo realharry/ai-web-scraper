@@ -13,24 +13,28 @@ chrome.action.onClicked.addListener((tab) => {
 });
 
 // Handle messages from content script and sidepanel
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'SCRAPE_CONTENT') {
-    handleContentScraping(message, sender, sendResponse);
+    handleContentScraping(message, sendResponse);
     return true; // Keep message channel open for async response
   }
 });
 
-async function handleContentScraping(message: any, sender: chrome.runtime.MessageSender, sendResponse: Function) {
+async function handleContentScraping(message: any, sendResponse: Function) {
   try {
-    // Forward scraping request to content script
-    if (sender.tab?.id) {
-      const response = await chrome.tabs.sendMessage(sender.tab.id, {
-        type: 'EXTRACT_CONTENT',
-        selector: message.selector,
-        extractionType: message.extractionType
-      });
-      sendResponse({ success: true, data: response });
+    // Use the tab ID from the message payload instead of sender.tab.id
+    const tabId = message.tabId;
+    if (!tabId) {
+      throw new Error('No tab ID provided in message');
     }
+    
+    // Forward scraping request to content script
+    const response = await chrome.tabs.sendMessage(tabId, {
+      type: 'EXTRACT_CONTENT',
+      selector: message.selector,
+      extractionType: message.extractionType
+    });
+    sendResponse({ success: true, data: response });
   } catch (error) {
     console.error('Error in content scraping:', error);
     sendResponse({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
